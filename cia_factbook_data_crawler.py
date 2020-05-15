@@ -53,7 +53,6 @@ def get_intl_org(filename):
         catl = list()
         
         text = ""
-    #    lookouts = ["note", "member", "observer", "candidate", "stake holder", "countries", "invitee", "partner"]
         for c in cate:
             temp = re.sub('<+/?[a-zA-Z]*(\s*[a-zA-Z]*=\".*\")*>+', '', c).strip()
             if " - " in temp and (re.search(".*\s-\s\(\d+.*\)", temp) or re.search("^\s*notes?\s-\s.*", temp)):
