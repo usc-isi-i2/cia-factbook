@@ -55,8 +55,13 @@ def get_intl_org(filename):
         text = ""
         for c in cate:
             temp = re.sub('<+/?[a-zA-Z]*(\s*[a-zA-Z]*=\".*\")*>+', '', c).strip()
-            if " - " in temp and (re.search(".*\s-\s\(\d+.*\)", temp) or re.search("^\s*notes?\s-\s.*", temp)):
-                catl.append(temp.split(" - ", 1))
+            if " - " in temp:
+                if re.search(".*\s-\s\(\d+.*\)", temp):
+                    heading, countries_with_number = temp.split(" - ", 1)
+                    countries, _ = re.subn("^\(\d+.*\)\s","", countries_with_number, 1)
+                    catl.append([heading, countries])
+                elif re.search("^\s*notes?\s-\s.*", temp):
+                    catl.append(temp.split(" - ", 1))
             else:
                 text += "\n" + temp
         text = text.strip()
