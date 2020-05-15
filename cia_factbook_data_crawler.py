@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup 
 import requests 
 from csv import writer
+import re
+import unicodedata
 
 USER_AGENT = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'} 
 
@@ -33,18 +35,43 @@ def get_chief_of_state(filename):
 
 def get_intl_org(filename):
     url = "https://www.cia.gov/library/publications/resources/the-world-factbook/appendix/print_appendixb.html"
-    soup = BeautifulSoup(requests.get(url, headers=USER_AGENT).text, "html.parser") 
+    soup = BeautifulSoup(requests.get(url, headers=USER_AGENT).text, "lxml") 
     
     def extract_data(className):
         dataList = soup.findAll('div', {'class': className})
+        if className == "category_data":
+            return [link for link in dataList]
         return [link.getText().strip() for link in dataList]
     
+    def get_data_rows(data):
+        input_string = unicodedata.normalize("NFKD", str(data.get_text))
+        brs = ['<br>', '</br>', '<br/>']
+        for br in brs:
+            input_string = input_string.replace(br,'<br>')
+        input_string = input_string.replace("<bound method Tag.get_text of ","")
+        cate = input_string.split("<br>")
+        catl = list()
+        
+        text = ""
+    #    lookouts = ["note", "member", "observer", "candidate", "stake holder", "countries", "invitee", "partner"]
+        for c in cate:
+            temp = re.sub('<+/?[a-zA-Z]*(\s*[a-zA-Z]*=\".*\")*>+', '', c).strip()
+            if " - " in temp and (re.search(".*\s-\s\(\d+.*\)", temp) or re.search("^\s*notes?\s-\s.*", temp)):
+                catl.append(temp.split(" - ", 1))
+            else:
+                text += "\n" + temp
+        text = text.strip()
+        if text:
+            catl.append(["text", text])
+        return catl
     category, category_data = extract_data('category'), extract_data('category_data')
     
     result = list()
     for i, cat in enumerate(category):
-        result.append([cat, category_data[i]])
-    
+        result_rows = get_data_rows(category_data[i])
+        if result_rows:
+            result+= [[cat] + row for row in result_rows]
+
     file_writer(result, filename)
     
 directory =  "D://USC//ISI//CIA_Factbook_extraction//"
